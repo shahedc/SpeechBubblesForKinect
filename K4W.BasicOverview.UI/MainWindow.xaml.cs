@@ -89,6 +89,22 @@ namespace K4W.BasicOverview.UI
         private WriteableBitmap _infraBitmap = null;
 
 
+        private ulong[] bodyTrackingIds = new ulong[6];
+        // init text
+        string[] textToDisplay = new string[6]; //"text not set";
+        string[] myMessages = 
+                        { 
+                            "What is BizSpark?", 
+                            "UMBC Rocks!", 
+                            "Free software?", 
+                            "HackUMBC!!!", 
+                            "Azure cloud!", 
+                            "Go Retrievers!", 
+                            "Free T-shirts?", 
+                            "Need caffeine..."
+                        };
+
+
         /// <summary>
         /// Default CTOR
         /// </summary>
@@ -99,8 +115,20 @@ namespace K4W.BasicOverview.UI
             // Initialize Kinect
             InitializeKinect();
 
+            // init messages
+            InitializeMessages();
+
             // Close Kinect when closing app
             Closing += OnClosing;
+        }
+
+        private void InitializeMessages()
+        {
+            for (int i = 0; i < bodyTrackingIds.Length; i++ )
+            {
+                textToDisplay[i] = i + "text not set";
+                bodyTrackingIds[i] = 0;
+            }
         }
 
         /// <summary>
@@ -426,14 +454,32 @@ namespace K4W.BasicOverview.UI
                 // Clear Skeleton Canvas
                 SkeletonCanvas.Children.Clear();
 
+                int bodyIndex = 0;
                 // Loop all bodies
                 foreach (Body body in _bodies)
                 {
                     // Only process tracked bodies
                     if (body.IsTracked)
                     {
-                        DrawBody(body);
+                        // replace with custom messages
+                        Random rnd = new Random();
+                        int randomValue = rnd.Next(0, myMessages.Length);
+                        if (bodyTrackingIds[bodyIndex] == body.TrackingId)
+                        {
+                            // same body, don't update text
+                            //textToDisplay = body.TrackingId.ToString();
+                        }
+                        else
+                        {
+                            // new body detected, update text!
+                            textToDisplay[bodyIndex] = "" + myMessages[randomValue] + "";
+                            // set body tracking id!
+                            bodyTrackingIds[bodyIndex] = body.TrackingId;
+                        }
+                        // pass on the message
+                        DrawBody(body, textToDisplay[bodyIndex]);
                     }
+                    bodyIndex++;
                 }
             }
         }
@@ -442,7 +488,7 @@ namespace K4W.BasicOverview.UI
         /// Visualize the body
         /// </summary>
         /// <param name="body">Tracked body</param>
-        private void DrawBody(Body body)
+        private void DrawBody(Body body, string textToDisplay)
         {
             // Draw points
             foreach (JointType type in body.Joints.Keys)
@@ -451,7 +497,7 @@ namespace K4W.BasicOverview.UI
                 switch (type)
                 {
                     case JointType.Head:
-                        DrawJoint(body.Joints[type], 20, Brushes.Yellow, 2, Brushes.White);
+                        DrawJoint(body.Joints[type], 20, Brushes.Yellow, 2, Brushes.White, textToDisplay);
                     //case JointType.FootLeft:
                     //case JointType.FootRight:
                     //    DrawJoint(body.Joints[type], 20, Brushes.Yellow, 2, Brushes.White);
@@ -489,7 +535,7 @@ namespace K4W.BasicOverview.UI
         /// <param name="fill">Fill color</param>
         /// <param name="borderWidth">Thickness of the border</param>
         /// <param name="border">Color of the boder</param>
-        private void DrawJoint(Joint joint, double radius, SolidColorBrush fill, double borderWidth, SolidColorBrush border)
+        private void DrawJoint(Joint joint, double radius, SolidColorBrush fill, double borderWidth, SolidColorBrush border, string textToDisplay = "not set")
         {
             if (joint.TrackingState != TrackingState.Tracked) return;
             
@@ -509,10 +555,12 @@ namespace K4W.BasicOverview.UI
             cb.Stroke = border;
             el.StrokeThickness = borderWidth;
             cb.Height = radius * 4;
-            cb.Width = radius * 20;
+            cb.Width = radius * 15;
 
             TextBlock tb = new TextBlock();
-            tb.Text = "Hey, what's up?";
+            tb.Text = textToDisplay;
+
+            
             tb.FontSize = 34;
             tb.Width = cb.Width;
             tb.Height = cb.Height;
